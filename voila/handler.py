@@ -30,6 +30,8 @@ class VoilaHandler(JupyterHandler):
         self.template_paths = kwargs.pop('template_paths', [])
         self.traitlet_config = kwargs.pop('config', None)
         self.voila_configuration = kwargs['voila_configuration']
+        self.prelaunch_hook = kwargs.get('prelaunch_hook', None)
+
         # we want to avoid starting multiple kernels due to template mistakes
         self.kernel_started = False
 
@@ -43,6 +45,17 @@ class VoilaHandler(JupyterHandler):
         ):  # when we are in single notebook mode but have a path
             self.redirect_to_file(path)
             return
+
+        if self.prelaunch_hook:
+            # Allow for preprocessing the notebook.
+            # Can be used to add auth, do custom formatting/standardization
+            # of the notebook, raise exceptions, etc
+            #
+            # Necessary inside of the handler if you need
+            # to access the tornado request itself
+            self.prelaunch_hook(self,
+                                notebook=notebook,
+                                cwd=self.cwd)
         cwd = os.path.dirname(notebook_path)
 
         # Adding request uri to kernel env
